@@ -41,22 +41,30 @@ function QuizResultFilter({ filteredValue, handleChange, appLocale }) {
 
   return (
     <div className="quiz-result-filter">
-      <div
-        ref={dropdownRef}
-        className={`filter-dropdown-select ${isOpen ? 'open' : ''}`}
-        onClick={toggleDropdown}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            toggleDropdown();
-          }
-        }}
-        role="button"
-        tabIndex={0}
-      >
-        <div className={`selected-option ${selectedOptionClass}`}>
-          {selectedValuesLocale[filteredValue]}
+      <div className="relative w-48">
+        <div
+          ref={dropdownRef}
+          className={`flex items-center justify-between w-full px-4 py-2 bg-white border rounded-lg cursor-pointer ${
+            isOpen ? 'border-blue-500' : 'border-gray-300'
+          }`}
+          onClick={toggleDropdown}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              toggleDropdown();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <span className="block truncate">
+            {selectedValuesLocale[filteredValue]}
+          </span>
+          <span className={`ml-2 transition-transform duration-200 ${
+            isOpen ? 'rotate-180' : ''
+          }`}>
+            ▼
+          </span>
         </div>
-        <span className={`arrow ${isOpen ? 'up' : 'down'}`} />
       </div>
       {isOpen && (
         <div

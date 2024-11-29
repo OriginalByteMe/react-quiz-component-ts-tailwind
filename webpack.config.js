@@ -9,13 +9,21 @@ module.exports = {
     path: path.join(__dirname, 'docs'),
     filename: 'bundle.js',
   },
-  devtool: 'eval-cheap-module-source-map', // dev only
   module: {
     rules: [
       {
         test: /\.(ts|tsx|js|jsx)$/,
-        use: 'babel-loader',
         exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: [
+              '@babel/preset-env',
+              '@babel/preset-react',
+              '@babel/preset-typescript'
+            ]
+          }
+        }
       },
       {
         test: /\.css$/i,
@@ -33,13 +41,6 @@ module.exports = {
     }),
     new MiniCssExtractPlugin(),
   ],
-  optimization: {
-    minimize: true,
-    minimizer: [
-      '...',
-      new CssMinimizerPlugin(),
-    ],
-  },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx'],
   },
@@ -49,5 +50,5 @@ module.exports = {
     },
     compress: true,
     port: 8080,
-  },
+  }
 };

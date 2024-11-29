@@ -1,12 +1,65 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Core from './Core';
 import defaultLocale from './Locale';
 import './styles.css';
 
+interface Question {
+  question: string;
+  questionType: string;
+  answerSelectionType: string;
+  answers: string[];
+  correctAnswer: string | string[];
+}
+export enum Segment {
+  Basic = 'Basic',
+  Medium = 'Medium', 
+  Advanced = 'Advanced'
+}
+
+
+interface Question {
+  question: string;
+  questionPic?: string;
+  questionType: string;
+  answerSelectionType: string;
+  answers: string[];
+  correctAnswer: string | string[];
+  messageForCorrectAnswer: string;
+  messageForIncorrectAnswer: string;
+  explanation: string;
+  point: string;
+  segment?: Segment;
+}
+
+interface QuizProps {
+  quiz: {
+    quizTitle: string;
+    quizSynopsis?: string;
+    questions: Question[];
+    nrOfQuestions?: number;
+    appLocale?: typeof defaultLocale;
+    progressBarColor?: string;
+  };
+  shuffle?: boolean;
+  shuffleAnswer?: boolean;
+  showDefaultResult?: boolean;
+  onComplete?: (obj: any) => void;
+  customResultPage?: (obj: any) => JSX.Element;
+  showInstantFeedback?: boolean;
+  continueTillCorrect?: boolean;
+  revealAnswerOnSubmit?: boolean;
+  allowNavigation?: boolean;
+  onQuestionSubmit?: (obj: any) => void;
+  disableSynopsis?: boolean;
+  timer?: number;
+  allowPauseTimer?: boolean;
+  enableProgressBar?: boolean;
+}
+
 function Quiz({
   quiz,
-  shuffle,
-  shuffleAnswer,
+  shuffle = false,
+  shuffleAnswer = false,
   showDefaultResult,
   onComplete,
   customResultPage,
@@ -19,7 +72,7 @@ function Quiz({
   timer,
   allowPauseTimer,
   enableProgressBar,
-}) {
+}: QuizProps) {
   const [start, setStart] = useState(false);
   const [questions, setQuestions] = useState(quiz.questions);
   const nrOfQuestions = quiz.nrOfQuestions && quiz.nrOfQuestions < quiz.questions.length
@@ -27,17 +80,17 @@ function Quiz({
     : quiz.questions.length;
 
   // Shuffle answers funtion here
-  const shuffleAnswerSequence = (oldQuestions = []) => {
+  const shuffleAnswerSequence = (oldQuestions: Question[] = []) => {
     const newQuestions = oldQuestions.map((question) => {
       const answerWithIndex = question.answers?.map((ans, i) => [ans, i]);
       const shuffledAnswersWithIndex = answerWithIndex.sort(
         () => Math.random() - 0.5,
       );
-      const shuffledAnswers = shuffledAnswersWithIndex.map((ans) => ans[0]);
+      const shuffledAnswers = shuffledAnswersWithIndex.map((ans) => String(ans[0]));
       if (question.answerSelectionType === 'single') {
         const oldCorrectAnswer = question.correctAnswer;
         const newCorrectAnswer = shuffledAnswersWithIndex.findIndex(
-          (ans) => `${ans[1] + 1}` === `${oldCorrectAnswer}`,
+          (ans) => `${Number(ans[1]) + 1}` === `${oldCorrectAnswer}`,
         ) + 1;
         return {
           ...question,
@@ -47,11 +100,11 @@ function Quiz({
       }
       if (question.answerSelectionType === 'multiple') {
         const oldCorrectAnswer = question.correctAnswer;
-        const newCorrectAnswer = oldCorrectAnswer.map(
-          (cans) => shuffledAnswersWithIndex.findIndex(
-            (ans) => `${ans[1] + 1}` === `${cans}`,
+        const newCorrectAnswer: string[] = (oldCorrectAnswer as string[]).map(
+          (cans: string) => shuffledAnswersWithIndex.findIndex(
+            (ans) => `${Number(ans[1]) + 1}` === `${cans}`,
           ) + 1,
-        );
+        ).map(String);
         return {
           ...question,
           correctAnswer: newCorrectAnswer,
@@ -62,7 +115,11 @@ function Quiz({
     });
     return newQuestions;
   };
-  const shuffleQuestions = useCallback((q) => {
+  interface ShuffleQuestions {
+    (q: Question[]): Question[];
+  }
+
+  const shuffleQuestions: ShuffleQuestions = useCallback((q) => {
     for (let i = q.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
       [q[i], q[j]] = [q[j], q[i]];
@@ -93,18 +150,26 @@ function Quiz({
     setQuestions(newQuestions);
   }, [start]);
 
-  const validateProgressBarColor = (inputColor) => {
+  const validateProgressBarColor = (inputColor: string): boolean => {
     const hexaPattern = /^#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})$/;
     return hexaPattern.test(inputColor);
   };
 
-  const validateQuiz = (q) => {
+  interface QuizValidation {
+    question: string;
+    questionType: string;
+    answerSelectionType: string;
+    answers: string[];
+    correctAnswer: string | string[];
+  }
+
+  const validateQuiz = (q: QuizProps['quiz']): boolean => {
     if (!q) {
       console.error('Quiz object is required.');
       return false;
     }
 
-    if ((timer && typeof timer !== 'number') || (timer < 1)) {
+    if (timer !== undefined && (typeof timer !== 'number' || timer < 1)) {
       console.error(timer && typeof timer !== 'number' ? 'timer must be a number' : 'timer must be a number greater than 0');
       return false;
     }
@@ -138,7 +203,7 @@ function Quiz({
         answerSelectionType,
         answers,
         correctAnswer,
-      } = questions[i];
+      } = questions[i] as QuizValidation;
       if (!question) {
         console.error("Field 'question' is required.");
         return false;
@@ -181,7 +246,7 @@ function Quiz({
 
       if (
         selectType === 'single'
-        && !(typeof selectType === 'string' || selectType instanceof String)
+        && typeof selectType !== 'string'
       ) {
         console.error(
           'answerSelectionType is single but expecting String in the field correctAnswer',
@@ -217,7 +282,7 @@ function Quiz({
           <div>
             {appLocale.landingHeaderText.replace(
               '<questionLength>',
-              nrOfQuestions,
+              nrOfQuestions.toString(),
             )}
           </div>
           {quiz.quizSynopsis && (
